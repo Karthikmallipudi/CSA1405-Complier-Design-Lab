@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Function to create and compile C code dynamically
+void create_and_execute_jit_code(int input_value) {
+    // Step 1: Write the C code to a temporary file
+    // The C code will use the input_value to compute the square of the number.
+    char code[1024];  // Buffer for the code
+    snprintf(code, sizeof(code),
+        "#include <stdio.h>\n"
+        "int square(int x) {\n"
+        "    return x * x;\n"
+        "}\n"
+        "int main() {\n"
+        "    int num = %d;\n"
+        "    printf(\"Square of %d is: %d\\n\", num, square(num));\n"
+        "    return 0;\n"
+        "}\n", input_value); // Inject input_value into the generated code
+
+    // Temporary filename for the generated C code
+    const char *filename = "temp_jit_code.c";
+    FILE *file = fopen(filename, "w");
+
+    if (file == NULL) {
+        perror("Failed to open file");
+        return;
+    }
+
+    // Write the code to the file
+    fprintf(file, "%s", code);
+    fclose(file);
+
+    // Step 2: Compile the generated C code using system call (GCC)
+    // The compiled code will be saved as 'temp_jit_code.out'
+    printf("Compiling the generated C code...\n");
+    int compile_status = system("gcc temp_jit_code.c -o temp_jit_code.out");
+
+    if (compile_status != 0) {
+        printf("Compilation failed!\n");
+        return;
+    }
+
+    // Step 3: Execute the compiled code
+    printf("Executing the compiled code...\n");
+    system("./temp_jit_code.out");
+
+    // Step 4: Clean up temporary files
+    remove(filename);         // Remove the source file
+    remove("temp_jit_code.out"); // Remove the compiled binary
+}
+
+int main() {
+    // Prompt user to input a number
+    int num;
+    printf("Enter a number to calculate its square: ");
+    scanf("%d", &num);  // Take input from the user
+    
+    create_and_execute_jit_code(num);  // Pass the input to the JIT simulation function
+    return 0;
+}
